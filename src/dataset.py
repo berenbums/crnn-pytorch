@@ -11,7 +11,7 @@ import numpy as np
 
 
 class Synth90kDataset(Dataset):
-    CHARS = '0123456789abcdefghijklmnopqrstuvwxyz'
+    CHARS = ' !"#&\'()*+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     CHAR2LABEL = {char: i + 1 for i, char in enumerate(CHARS)}
     LABEL2CHAR = {label: char for char, label in CHAR2LABEL.items()}
 
@@ -61,7 +61,7 @@ class Synth90kDataset(Dataset):
         try:
             image = Image.open(path).convert('L')  # grey-scale
         except IOError:
-            print('Corrupted image for %d' % index)
+            print(f'Corrupted image {path}')
             return self[index + 1]
 
         image = image.resize((self.img_width, self.img_height), resample=Image.BILINEAR)
