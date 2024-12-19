@@ -73,7 +73,8 @@ def main():
     crnn = CRNN(1, img_height, img_width, num_class,
                 map_to_seq_hidden=config['map_to_seq_hidden'],
                 rnn_hidden=config['rnn_hidden'],
-                leaky_relu=config['leaky_relu'])
+                leaky_relu=config['leaky_relu'],
+                dropout=config['dropout'])
     if reload_checkpoint:
         crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
     crnn.to(device)
@@ -106,8 +107,9 @@ def main():
                 if i % save_interval == 0:
                     prefix = 'crnn'
                     loss = evaluation['loss']
+                    acc = evaluation['acc']
                     save_model_path = os.path.join(config['checkpoints_dir'],
-                                                   f'{prefix}_{i:06}_loss{loss}.pt')
+                                                   f'{prefix}_{i:06}_loss{loss}_acc{acc}.pt')
                     torch.save(crnn.state_dict(), save_model_path)
                     print('save model at ', save_model_path)
 

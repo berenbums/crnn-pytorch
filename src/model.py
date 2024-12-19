@@ -4,7 +4,7 @@ import torch.nn as nn
 class CRNN(nn.Module):
 
     def __init__(self, img_channel, img_height, img_width, num_class,
-                 map_to_seq_hidden=64, rnn_hidden=256, leaky_relu=False):
+                 map_to_seq_hidden=64, rnn_hidden=256, leaky_relu=False, dropout=0.0):
         super(CRNN, self).__init__()
 
         self.cnn, (output_channel, output_height, output_width) = \
@@ -16,6 +16,7 @@ class CRNN(nn.Module):
         self.rnn2 = nn.LSTM(2 * rnn_hidden, rnn_hidden, bidirectional=True)
 
         self.dense = nn.Linear(2 * rnn_hidden, num_class)
+        self.dropout = nn.Dropout(p=dropout)
 
     def _cnn_backbone(self, img_channel, img_height, img_width, leaky_relu):
         assert img_height % 16 == 0
@@ -80,6 +81,7 @@ class CRNN(nn.Module):
         batch, channel, height, width = conv.size()
 
         conv = conv.view(batch, channel * height, width)
+        conv = self.dropout(conv)
         conv = conv.permute(2, 0, 1)  # (width, batch, feature)
         seq = self.map_to_seq(conv)
 

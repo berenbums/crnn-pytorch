@@ -1,7 +1,7 @@
 
 common_config = {
     'data_dir': '/content/crnn-pytorch/data/',
-    'img_width': 128,
+    'img_width': 100,
     'img_height': 32,
     'map_to_seq_hidden': 64,
     'rnn_hidden': 256,
@@ -13,15 +13,16 @@ train_config = {
     'train_batch_size': 4,
     'eval_batch_size': 512,
     'lr': 0.0003,
+    'dropout': 0.35,
     'show_interval': 2000,
     'valid_interval': 8000,
     'save_interval': 8000,
     'cpu_workers': 2,
-    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch4/crnn_120000_loss3.5435634669933394.pt',
+    'reload_checkpoint': None,
     'valid_max_iter': 100,
     'decode_method': 'greedy',
     'beam_size': 10,
-    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch4/'
+    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch5/'
 }
 train_config.update(common_config)
 
