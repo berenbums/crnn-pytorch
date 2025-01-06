@@ -10,13 +10,13 @@ common_config = {
 
 train_config = {
     'epochs': 100,
-    'train_batch_size': 4,
+    'train_batch_size': 8,
     'eval_batch_size': 512,
     'lr': 0.0003,
     'dropout': 0.5,
-    'show_interval': 4000,
-    'valid_interval': 8000,
-    'save_interval': 8000,
+    'show_interval': 2000,
+    'valid_interval': 4000,
+    'save_interval': 4000,
     'cpu_workers': 2,
     'reload_checkpoint': None,
     'valid_max_iter': 100,
