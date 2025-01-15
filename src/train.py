@@ -79,7 +79,7 @@ def main():
         crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
     crnn.to(device)
 
-    optimizer = optim.RMSprop(crnn.parameters(), lr=lr)
+    optimizer = optim.RMSprop(crnn.parameters(), lr=lr, weight_decay=0.0001)
     criterion = CTCLoss(reduction='sum', zero_infinity=True)
     criterion.to(device)
 
