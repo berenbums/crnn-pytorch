@@ -37,6 +37,7 @@ def main():
     train_batch_size = config['train_batch_size']
     eval_batch_size = config['eval_batch_size']
     lr = config['lr']
+    weight_decay = config['weight_decay']
     show_interval = config['show_interval']
     valid_interval = config['valid_interval']
     save_interval = config['save_interval']
@@ -79,7 +80,7 @@ def main():
         crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
     crnn.to(device)
 
-    optimizer = optim.RMSprop(crnn.parameters(), lr=lr, weight_decay=0.0001)
+    optimizer = optim.RMSprop(crnn.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = CTCLoss(reduction='sum', zero_infinity=True)
     criterion.to(device)
 
