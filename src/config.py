@@ -13,7 +13,7 @@ train_config = {
     'train_batch_size': 32,
     'eval_batch_size': 512,
     'lr': 0.0003,
-    'weight_decay': '0.001',
+    'weight_decay': 0.001,
     'dropout': 0.5,
     'show_interval': 2000,
     'valid_interval': 4000,
