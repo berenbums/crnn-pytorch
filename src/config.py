@@ -12,7 +12,7 @@ train_config = {
     'epochs': 100,
     'train_batch_size': 32,
     'eval_batch_size': 512,
-    'lr': 0.0003,
+    'lr': 0.0001,
     'weight_decay': 0.00001,
     'dropout': 0.5,
     'show_interval': 2000,
@@ -23,7 +23,7 @@ train_config = {
     'valid_max_iter': 100,
     'decode_method': 'greedy',
     'beam_size': 10,
-    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch13/'
+    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch14/'
 }
 train_config.update(common_config)
 
