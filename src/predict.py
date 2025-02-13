@@ -13,7 +13,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 from config import common_config as config
-from dataset import Synth90kDataset, synth90k_collate_fn
+from dataset import CssDataset
 from model import CRNN
 from ctc_decoder import ctc_decode
 
@@ -64,7 +64,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'device: {device}')
 
-    predict_dataset = Synth90kDataset(paths=images,
+    predict_dataset = CssDataset(paths=images,
                                       img_height=img_height, img_width=img_width)
 
     predict_loader = DataLoader(
@@ -72,7 +72,7 @@ def main():
         batch_size=batch_size,
         shuffle=False)
 
-    num_class = len(Synth90kDataset.LABEL2CHAR) + 1
+    num_class = len(CssDataset.LABEL2CHAR) + 1
     crnn = CRNN(1, img_height, img_width, num_class,
                 map_to_seq_hidden=config['map_to_seq_hidden'],
                 rnn_hidden=config['rnn_hidden'],
@@ -80,7 +80,7 @@ def main():
     crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
     crnn.to(device)
 
-    preds = predict(crnn, predict_loader, Synth90kDataset.LABEL2CHAR,
+    preds = predict(crnn, predict_loader, CssDataset.LABEL2CHAR,
                     decode_method=decode_method,
                     beam_size=beam_size)
 

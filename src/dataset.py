@@ -3,15 +3,12 @@ import glob
 
 import torch
 from torch.utils.data import Dataset
-from scipy import signal
-from scipy.io import wavfile
-import cv2
 from PIL import Image
 import numpy as np
 
 
-class Synth90kDataset(Dataset):
-    CHARS = ' !"#&\'()*+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+class CssDataset(Dataset):
+    CHARS = ' 0123456789abcdefghPNBRQKBSLTDx+-=()!?#.:'
     CHAR2LABEL = {char: i + 1 for i, char in enumerate(CHARS)}
     LABEL2CHAR = {label: char for char, label in CHAR2LABEL.items()}
 
@@ -27,11 +24,6 @@ class Synth90kDataset(Dataset):
         self.img_width = img_width
 
     def _load_from_raw_files(self, root_dir, mode):
-        mapping = {}
-        with open(os.path.join(root_dir, 'lexicon.txt'), 'r') as fr:
-            for i, line in enumerate(fr.readlines()):
-                mapping[i] = line.strip()
-
         paths_file = None
         if mode == 'train':
             paths_file = 'annotation_train.txt'
@@ -44,10 +36,10 @@ class Synth90kDataset(Dataset):
         texts = []
         with open(os.path.join(root_dir, paths_file), 'r') as fr:
             for line in fr.readlines():
-                path, index_str = line.strip().split(' ')
-                path = os.path.join(root_dir, path)
-                index = int(index_str)
-                text = mapping[index]
+                line_structure = line.strip().split(' ')
+                path = os.path.join(root_dir, line_structure[0])
+                text = ' '.join(line_structure[1:])
+
                 paths.append(path)
                 texts.append(text)
         return paths, texts
@@ -82,7 +74,7 @@ class Synth90kDataset(Dataset):
             return image
 
 
-def synth90k_collate_fn(batch):
+def css_collate_fn(batch):
     images, targets, target_lengths = zip(*batch)
     images = torch.stack(images, 0)
     targets = torch.cat(targets, 0)
