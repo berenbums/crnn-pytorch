@@ -23,7 +23,7 @@ train_config = {
     'valid_max_iter': 100,
     'decode_method': 'greedy',
     'beam_size': 10,
-    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch18/'
+    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-1/'
 }
 train_config.update(common_config)
 
