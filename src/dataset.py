@@ -65,8 +65,10 @@ class CssDataset(Dataset):
         image = torch.FloatTensor(image)
         if self.texts:
             text = self.texts[index]
-            print(text)
-            target = [self.CHAR2LABEL[c] for c in text]
+            try:
+                target = [self.CHAR2LABEL[c] for c in text]
+            except KeyError:
+                raise KeyError(f'Caught KeyError for text {text}')
             target_length = [len(target)]
 
             target = torch.LongTensor(target)
