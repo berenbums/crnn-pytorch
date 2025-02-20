@@ -77,7 +77,7 @@ def main():
                 map_to_seq_hidden=config['map_to_seq_hidden'],
                 rnn_hidden=config['rnn_hidden'],
                 leaky_relu=config['leaky_relu'])
-    crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
+    crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device, weights_only=False))
     crnn.to(device)
 
     preds = predict(crnn, predict_loader, CssDataset.LABEL2CHAR,

@@ -36,12 +36,13 @@ class CssDataset(Dataset):
         texts = []
         with open(os.path.join(root_dir, paths_file), 'r') as fr:
             for line in fr.readlines():
-                line_structure = line.strip().split(' ')
-                path = os.path.join(root_dir, line_structure[0])
-                text = ' '.join(line_structure[1:])
+                if not line.startswith('#'):
+                    line_structure = line.strip().split(' ')
+                    path = os.path.join(root_dir, line_structure[0])
+                    text = ' '.join(line_structure[1:])
 
-                paths.append(path)
-                texts.append(text)
+                    paths.append(path)
+                    texts.append(text)
         return paths, texts
 
     def __len__(self):

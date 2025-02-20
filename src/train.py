@@ -76,7 +76,7 @@ def main():
                 leaky_relu=config['leaky_relu'],
                 dropout=config['dropout'])
     if reload_checkpoint:
-        crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
+        crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device, weights_only=False))
     crnn.to(device)
 
     optimizer = optim.RMSprop(crnn.parameters(), lr=lr, weight_decay=weight_decay)
