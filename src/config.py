@@ -23,14 +23,14 @@ train_config = {
     'valid_max_iter': 100,
     'decode_method': 'greedy',
     'beam_size': 10,
-    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-2/'
+    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-3/'
 }
 train_config.update(common_config)
 
 evaluate_config = {
     'eval_batch_size': 512,
     'cpu_workers': 2,
-    'reload_checkpoint': 'checkpoints/crnn_144000_loss0.707304867677832_acc0.9047303271441203.pt',
+    'reload_checkpoint': 'results/crnn-pytorch-css-2/crnn_148000_loss0.05423931501600545_acc0.9831838565022422.pt',
     'decode_method': 'beam_search',
     'beam_size': 10,
 }
