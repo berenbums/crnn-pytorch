@@ -19,11 +19,11 @@ train_config = {
     'valid_interval': 4000,
     'save_interval': 4000,
     'cpu_workers': 2,
-    'reload_checkpoint': None,
+    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-5/crnn_168000_loss0.13274288051239183_acc0.9713777047384279.pt',
     'valid_max_iter': 100,
     'decode_method': 'greedy',
     'beam_size': 10,
-    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-5/'
+    'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-6/'
 }
 train_config.update(common_config)
 
