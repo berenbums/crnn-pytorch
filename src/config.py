@@ -19,7 +19,7 @@ train_config = {
     'valid_interval': 4000,
     'save_interval': 4000,
     'cpu_workers': 2,
-    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-5/crnn_448000_loss0.17648025185227903_acc0.9595974564854233.pt',
+    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/output/crnn-pytorch-css-7/crnn_448000_loss0.17648025185227903_acc0.9595974564854233.pt',
     'valid_max_iter': 100,
     'decode_method': 'greedy',
     'beam_size': 10,
