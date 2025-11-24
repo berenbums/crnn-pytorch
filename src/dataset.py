@@ -8,7 +8,7 @@ import numpy as np
 
 
 class CssDataset(Dataset):
-    CHARS = ' 0123456789abcdefghPNBRQKSLTDCAFHZJVGWVŞOnqrEix+-=()/!?#.:§'
+    CHARS = ' 0123456789abcdefghPNBRQKSLTDCAFHZJVGWŞOnqrEix+-=()/!?#.:§'
     CHAR2LABEL = {char: i + 1 for i, char in enumerate(CHARS)}
     LABEL2CHAR = {label: char for char, label in CHAR2LABEL.items()}
 
