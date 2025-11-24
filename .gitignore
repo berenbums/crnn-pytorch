@@ -2,6 +2,7 @@
 .vscode
 .DS_Store
 Pipfile*
+results/
 
 # proto related files
 *_pb2.py
