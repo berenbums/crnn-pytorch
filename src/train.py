@@ -36,13 +36,11 @@ def main():
     train_batch_size = config['train_batch_size']
     eval_batch_size = config['eval_batch_size']
     lr = config['lr']
-    weight_decay = config['weight_decay']
     show_interval = config['show_interval']
     valid_interval = config['valid_interval']
     save_interval = config['save_interval']
     cpu_workers = config['cpu_workers']
     reload_checkpoint = config['reload_checkpoint']
-    valid_max_iter = config['valid_max_iter']
 
     img_width = config['img_width']
     img_height = config['img_height']
@@ -79,7 +77,7 @@ def main():
         crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device, weights_only=False))
     crnn.to(device)
 
-    optimizer = optim.RMSprop(crnn.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = optim.RMSprop(crnn.parameters(), lr=lr)
     criterion = CTCLoss(reduction='sum', zero_infinity=True)
     criterion.to(device)
 
