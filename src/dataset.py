@@ -1,6 +1,4 @@
 import os
-import glob
-
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
@@ -52,7 +50,7 @@ class CssDataset(Dataset):
         path = self.paths[index]
 
         try:
-            image = Image.open(path).convert('L')  # grey-scale
+            image = Image.open(path).convert('L') # grey-scale
         except IOError:
             print(f'Corrupted image {path}')
             return self[index + 1]
