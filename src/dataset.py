@@ -10,7 +10,7 @@ class CssDataset(Dataset):
     CHAR2LABEL = {char: i + 1 for i, char in enumerate(CHARS)}
     LABEL2CHAR = {label: char for char, label in CHAR2LABEL.items()}
 
-    def __init__(self, root_dir=None, mode=None, paths=None, img_height=32, img_width=100):
+    def __init__(self, root_dir=None, mode=None, paths=None, img_height=64, img_width=200):
         if root_dir and mode and not paths:
             paths, texts = self._load_from_raw_files(root_dir, mode)
         elif not root_dir and not mode and paths:
