@@ -19,7 +19,7 @@ train_config = {
     'valid_interval': 4000,
     'save_interval': 4000,
     'cpu_workers': 2,
-    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/resources/crnn_172000_loss0.20408699400912203_acc0.9540905652220901.pt',
+    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/resources/crnn_160000_loss0.19648424851679228_acc0.9565330163190316.pt',
     'decode_method': 'greedy',
     'beam_size': 10,
     'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/'
