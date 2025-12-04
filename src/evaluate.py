@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.nn import CTCLoss
+from torchmetrics.text import CharErrorRate
 from tqdm import tqdm
 
 from dataset import CssDataset, css_collate_fn
@@ -10,6 +11,12 @@ from config import evaluate_config as config
 
 torch.backends.cudnn.enabled = False
 
+label2char = CssDataset.LABEL2CHAR
+
+def labels_to_string(labels):
+    """Convert a list of label indices to a string."""
+    return ''.join(label2char[label] for label in labels)
+
 
 def evaluate(crnn, dataloader, criterion,
              max_iter=None, decode_method='beam_search', beam_size=10):
@@ -17,8 +24,8 @@ def evaluate(crnn, dataloader, criterion,
 
     tot_count = 0
     tot_loss = 0
-    tot_correct = 0
-    wrong_cases = []
+
+    cer = CharErrorRate()
 
     pbar_total = max_iter if max_iter else len(dataloader)
     pbar = tqdm(total=pbar_total, desc="Evaluate")
@@ -49,20 +56,19 @@ def evaluate(crnn, dataloader, criterion,
             for pred, target_length in zip(preds, target_lengths):
                 real = reals[target_length_counter:target_length_counter + target_length]
                 target_length_counter += target_length
-                if pred == real:
-                    tot_correct += 1
-                else:
-                    wrong_cases.append((real, pred))
+
+                pred_str = labels_to_string(pred)
+                real_str = labels_to_string(real)
+
+                cer.update(pred_str, real_str)
 
             pbar.update(1)
         pbar.close()
 
-    evaluation = {
+    return {
         'loss': tot_loss / tot_count,
-        'acc': tot_correct / tot_count,
-        'wrong_cases': wrong_cases
+        'cer': cer.compute().item()
     }
-    return evaluation
 
 
 def main():
@@ -86,7 +92,7 @@ def main():
         num_workers=cpu_workers,
         collate_fn=css_collate_fn)
 
-    num_class = len(CssDataset.LABEL2CHAR) + 1
+    num_class = len(label2char) + 1
     crnn = CRNN(1, img_height, img_width, num_class,
                 map_to_seq_hidden=config['map_to_seq_hidden'],
                 rnn_hidden=config['rnn_hidden'],
@@ -100,7 +106,7 @@ def main():
     evaluation = evaluate(crnn, test_loader, criterion,
                           decode_method=config['decode_method'],
                           beam_size=config['beam_size'])
-    print('test_evaluation: loss={loss}, acc={acc}'.format(**evaluation))
+    print('test_evaluation: loss={loss}, cer={cer}'.format(**evaluation))
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ train_config = {
     'valid_interval': 4000,
     'save_interval': 4000,
     'cpu_workers': 2,
-    'reload_checkpoint': None,
+    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/resources/crnn_468000_loss0.21019311518523184_acc0.9585422790938959.pt',
     'decode_method': 'greedy',
     'beam_size': 10,
     'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/'
@@ -29,7 +29,7 @@ train_config.update(common_config)
 evaluate_config = {
     'eval_batch_size': 512,
     'cpu_workers': 2,
-    'reload_checkpoint': 'results/crnn-pytorch-css-8/crnn_140000_loss0.15097216252580511_acc0.9678940490144564.pt',
+    'reload_checkpoint': 'results/crnn-pytorch-css-17/crnn_468000_loss0.21019311518523184_acc0.9585422790938959.pt',
     'decode_method': 'beam_search',
     'beam_size': 10,
 }

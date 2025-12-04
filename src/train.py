@@ -101,14 +101,14 @@ def main():
                 evaluation = evaluate(crnn, valid_loader, criterion,
                                       decode_method=config['decode_method'],
                                       beam_size=config['beam_size'])
-                print('valid_evaluation: loss={loss}, acc={acc}'.format(**evaluation))
+                print('valid_evaluation: loss={loss}, cer={cer}'.format(**evaluation))
 
                 if i % save_interval == 0:
                     prefix = 'crnn'
                     loss = evaluation['loss']
-                    acc = evaluation['acc']
+                    cer = evaluation['cer']
                     save_model_path = os.path.join(config['checkpoints_dir'],
-                                                   f'{prefix}_{i:06}_loss{loss}_acc{acc}.pt')
+                                                   f'{prefix}_{i:06}_loss{loss}_cer{cer}.pt')
                     torch.save(crnn.state_dict(), save_model_path)
                     print('save model at ', save_model_path)
 
