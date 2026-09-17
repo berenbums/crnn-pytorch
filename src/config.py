@@ -17,7 +17,26 @@ train_config = {
     'lr_min': 0.000001,
     'warmup_iterations': 500,
     'weight_decay': 0.01,
-    'dropout': 0.5,
+    'dropout': 0.3,
+    # Online augmentation of the training crops (see augment.py). Set to None to train on the plain crops.
+    'augmentation': {
+        'scale': (0.8, 1.15),          # text size inside the cell: < 1 adds margin, > 1 crops the borders
+        'rotate': 3.0,                 # degrees
+        'shear': 0.15,
+        'thicken_probability': 0.25,   # min filter: thicker strokes
+        'thin_probability': 0.15,      # max filter: thinner strokes
+        'contrast': (0.75, 1.25),
+        'brightness': 0.15,            # fraction of the grey range
+        'blur_probability': 0.3,
+        'blur_radius': (0.3, 1.0),
+        'noise_probability': 0.3,
+        'noise_sigma': 0.04,           # fraction of the grey range
+        'offset_probability': 0.5,     # random horizontal placement on the canvas instead of left-aligned
+    },
+    # Sampling weights: crops of under-represented collections and labels with rare characters are drawn more often.
+    'collection_weights': {'othr': 2.0, 'my': 1.5, 'ajcc': 1.0, 'hcs': 1.0},
+    'rare_char_threshold': 2000,
+    'rare_char_weight': 3.0,
     'show_interval': 2000,
     'valid_interval': 4000,
     'save_interval': 4000,

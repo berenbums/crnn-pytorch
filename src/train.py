@@ -2,7 +2,7 @@ import os
 import time
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch.optim as optim
 from torch.nn import CTCLoss
 
@@ -94,17 +94,21 @@ def main():
     torch.backends.cudnn.benchmark = True
     print(f'device: {device}, mixed precision: {amp_dtype}')
 
-    train_dataset = CssDataset(root_dir=data_dir, mode='train',
-                                    img_height=img_height, img_width=img_width, cache_dir=cache_dir)
+    train_dataset = CssDataset(root_dir=data_dir, mode='train', img_height=img_height, img_width=img_width,
+                                    cache_dir=cache_dir, augmentation=config.get('augmentation'))
     valid_dataset = CssDataset(root_dir=data_dir, mode='dev',
                                     img_height=img_height, img_width=img_width, cache_dir=cache_dir)
+
+    # Draw under-represented collections and rare characters more often; one epoch still has len(train_dataset) samples.
+    sample_weights = train_dataset.sample_weights(config['collection_weights'], config['rare_char_threshold'], config['rare_char_weight'])
+    sampler = WeightedRandomSampler(sample_weights, num_samples=len(train_dataset), replacement=True)
 
     loader_options = {'num_workers': cpu_workers, 'collate_fn': css_collate_fn,
                       'pin_memory': device.type == 'cuda', 'persistent_workers': cpu_workers > 0}
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=train_batch_size,
-        shuffle=True,
+        sampler=sampler,
         **loader_options)
     # Keep the validation set in order so that evaluate() can attribute samples to their collections.
     valid_loader = DataLoader(
