@@ -1,7 +1,7 @@
 
 common_config = {
     'data_dir': '/content/crnn-pytorch/data/',
-    'img_width': 100,
+    'img_width': 160,
     'img_height': 32,
     'map_to_seq_hidden': 64,
     'rnn_hidden': 256,
@@ -9,17 +9,26 @@ common_config = {
 }
 
 train_config = {
-    'epochs': 100,
-    'train_batch_size': 32,
+    'epochs': 10,
+    'train_batch_size': 128,
     'eval_batch_size': 512,
-    'lr': 0.0001,
-    'weight_decay': 0.00001,
+    # AdamW with a linear warmup over 'warmup_iterations' followed by cosine decay to 'lr_min' over all epochs.
+    'lr': 0.0003,
+    'lr_min': 0.000001,
+    'warmup_iterations': 500,
+    'weight_decay': 0.01,
     'dropout': 0.5,
     'show_interval': 2000,
     'valid_interval': 4000,
     'save_interval': 4000,
     'cpu_workers': 2,
-    'reload_checkpoint': '/content/drive/MyDrive/Colab Notebooks/resources/crnn_104000_loss0.20359827135129926_cer0.017572328448295593.pt',
+    # Decoded crops are cached as '<cache_dir>/<split>_<h>x<w>.npy'; keep it on the local Colab disk for fast access.
+    'cache_dir': '/content/crnn-pytorch/data/',
+    # bfloat16 on L4/A100, float16 with loss scaling on T4; set to False to train in float32.
+    'mixed_precision': True,
+    'reload_checkpoint': None,
+    # Optional 'crnn_train_state.pt' written next to the checkpoints to resume optimizer state and iteration counter.
+    'reload_train_state': None,
     'decode_method': 'greedy',
     'beam_size': 10,
     'checkpoints_dir': '/content/drive/MyDrive/Colab Notebooks/output/'

@@ -1,3 +1,7 @@
+import os
+import re
+from collections import defaultdict
+
 import torch
 from torch.utils.data import DataLoader
 from torch.nn import CTCLoss
@@ -9,8 +13,6 @@ from model import CRNN
 from ctc_decoder import ctc_decode
 from config import evaluate_config as config
 
-torch.backends.cudnn.enabled = False
-
 label2char = CssDataset.LABEL2CHAR
 
 def labels_to_string(labels):
@@ -18,14 +20,27 @@ def labels_to_string(labels):
     return ''.join(label2char[label] for label in labels)
 
 
+def collection_of(path):
+    """Return the collection an image belongs to, e.g. '.../hcs-aug/hcs00000004f_0_57_aug_0.jpg' -> 'hcs'.
+    Numbered re-extractions such as 'othr-2' belong to the same collection as 'othr'."""
+    return re.sub(r'(-aug|-\d+)', '', os.path.basename(os.path.dirname(path)))
+
+
 def evaluate(crnn, dataloader, criterion,
              max_iter=None, decode_method='beam_search', beam_size=10):
+    """Evaluate a model and return loss, CER and sequence accuracy (exact match), overall and per collection.
+
+    The per-collection breakdown relies on the dataloader iterating the dataset in order (shuffle=False)."""
     crnn.eval()
 
     tot_count = 0
     tot_loss = 0
 
     cer = CharErrorRate()
+    exact_matches = 0
+    per_collection = defaultdict(lambda: {'count': 0, 'exact_matches': 0, 'cer': CharErrorRate()})
+    paths = getattr(dataloader.dataset, 'paths', None)
+    sample_index = 0
 
     pbar_total = max_iter if max_iter else len(dataloader)
     pbar = tqdm(total=pbar_total, desc="Evaluate")
@@ -38,8 +53,9 @@ def evaluate(crnn, dataloader, criterion,
 
             images, targets, target_lengths = [d.to(device) for d in data]
 
-            logits = crnn(images)
-            log_probs = torch.nn.functional.log_softmax(logits, dim=2)
+            with torch.autocast(device_type=device, enabled=device == 'cuda'):
+                logits = crnn(images)
+            log_probs = torch.nn.functional.log_softmax(logits.float(), dim=2)
 
             batch_size = images.size(0)
             input_lengths = torch.LongTensor([logits.size(0)] * batch_size)
@@ -61,14 +77,39 @@ def evaluate(crnn, dataloader, criterion,
                 real_str = labels_to_string(real)
 
                 cer.update(pred_str, real_str)
+                exact_matches += pred_str == real_str
+
+                if paths:
+                    stats = per_collection[collection_of(paths[sample_index])]
+                    stats['count'] += 1
+                    stats['exact_matches'] += pred_str == real_str
+                    stats['cer'].update(pred_str, real_str)
+                sample_index += 1
 
             pbar.update(1)
         pbar.close()
 
     return {
         'loss': tot_loss / tot_count,
-        'cer': cer.compute().item()
+        'cer': cer.compute().item(),
+        'seq_acc': exact_matches / tot_count,
+        'collections': {
+            name: {
+                'count': stats['count'],
+                'cer': stats['cer'].compute().item(),
+                'seq_acc': stats['exact_matches'] / stats['count'],
+            }
+            for name, stats in sorted(per_collection.items())
+        },
     }
+
+
+def format_evaluation(evaluation):
+    """Format an evaluation result as a one-line summary followed by one line per collection."""
+    lines = ['loss={loss:.5f}, cer={cer:.5f}, seq_acc={seq_acc:.5f}'.format(**evaluation)]
+    for name, stats in evaluation['collections'].items():
+        lines.append(f'  {name}: n={stats["count"]}, cer={stats["cer"]:.5f}, seq_acc={stats["seq_acc"]:.5f}')
+    return '\n'.join(lines)
 
 
 def main():
@@ -106,7 +147,7 @@ def main():
     evaluation = evaluate(crnn, test_loader, criterion,
                           decode_method=config['decode_method'],
                           beam_size=config['beam_size'])
-    print('test_evaluation: loss={loss}, cer={cer}'.format(**evaluation))
+    print('test_evaluation: ' + format_evaluation(evaluation))
 
 
 if __name__ == '__main__':
