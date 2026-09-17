@@ -21,16 +21,13 @@ def labels_to_string(labels):
 
 
 def collection_of(path):
-    """Return the collection an image belongs to, e.g. '.../hcs-aug/hcs00000004f_0_57_aug_0.jpg' -> 'hcs'.
-    Numbered re-extractions such as 'othr-2' belong to the same collection as 'othr'."""
+    """Return the collection an image belongs to"""
     return re.sub(r'(-aug|-\d+)', '', os.path.basename(os.path.dirname(path)))
 
 
 def evaluate(crnn, dataloader, criterion,
              max_iter=None, decode_method='beam_search', beam_size=10):
-    """Evaluate a model and return loss, CER and sequence accuracy (exact match), overall and per collection.
-
-    The per-collection breakdown relies on the dataloader iterating the dataset in order (shuffle=False)."""
+    """Evaluate a model and return loss, CER and sequence accuracy (exact match), overall and per collection."""
     crnn.eval()
 
     tot_count = 0
