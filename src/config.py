@@ -57,8 +57,10 @@ train_config.update(common_config)
 evaluate_config = {
     'eval_batch_size': 512,
     'cpu_workers': 2,
-    'reload_checkpoint': 'results/crnn-pytorch-css-17/crnn_468000_loss0.21019311518523184_acc0.9585422790938959.pt',
+    'reload_checkpoint': 'results/crnn-pytorch-css-22/crnn_032000_loss0.69584_cer0.05218_acc0.90302.pt',
     'decode_method': 'beam_search',
     'beam_size': 10,
+    # Report the n most probable sequences per crop (oracle accuracy and confidence calibration); None for top-1 only.
+    'n_best': 3,
 }
 evaluate_config.update(common_config)

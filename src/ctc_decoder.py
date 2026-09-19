@@ -27,43 +27,49 @@ def greedy_decode(emission_log_prob, blank=0, **kwargs):
     return labels
 
 
+def beam_search_nbest(emission_log_prob, blank=0, beam_size=10, emission_threshold=None, n_best=None):
+    """Beam search over CTC paths returning the n most probable label sequences with their probabilities.
+
+    Same search as the original beam_search_decode (prune paths per timestep, merge paths that collapse to the
+    same labels at the end), vectorised over the beam x class matrix. Probabilities are normalised over the merged
+    sequences that survived the search, so the top entry's probability is a usable confidence."""
+    if emission_threshold is None:
+        emission_threshold = np.log(DEFAULT_EMISSION_THRESHOLD)
+    length, class_count = emission_log_prob.shape
+    emission_log_prob = np.where(emission_log_prob < emission_threshold, NINF, emission_log_prob)
+
+    prefixes = [()]
+    scores = np.zeros(1)
+    for t in range(length):
+        # (beam, class): score of every one-step extension of every beam.
+        candidates = scores[:, None] + emission_log_prob[t][None, :]
+        flat = candidates.ravel()
+        if flat.size > beam_size:
+            top = np.argpartition(-flat, beam_size - 1)[:beam_size]
+        else:
+            top = np.arange(flat.size)
+        top = top[flat[top] > NINF]
+        if top.size == 0:
+            # Every class fell below the threshold at this timestep: keep the beams and treat the step as blank.
+            prefixes = [prefix + (blank,) for prefix in prefixes]
+            continue
+        scores = flat[top]
+        prefixes = [prefixes[index // class_count] + (index % class_count,) for index in top]
+
+    # Merge paths that collapse to the same label sequence.
+    merged = {}
+    for prefix, score in zip(prefixes, scores):
+        labels = tuple(_reconstruct(prefix, blank))
+        merged[labels] = logsumexp([merged.get(labels, NINF), score])
+    labels_list = sorted(merged.items(), key=lambda item: item[1], reverse=True)[:n_best]
+    total = logsumexp(list(merged.values()))
+    return [(list(labels), float(np.exp(score - total))) for labels, score in labels_list]
+
+
 def beam_search_decode(emission_log_prob, blank=0, **kwargs):
     beam_size = kwargs['beam_size']
     emission_threshold = kwargs.get('emission_threshold', np.log(DEFAULT_EMISSION_THRESHOLD))
-
-    length, class_count = emission_log_prob.shape
-
-    beams = [([], 0)]  # (prefix, accumulated_log_prob)
-    for t in range(length):
-        new_beams = []
-        for prefix, accumulated_log_prob in beams:
-            for c in range(class_count):
-                log_prob = emission_log_prob[t, c]
-                if log_prob < emission_threshold:
-                    continue
-                new_prefix = prefix + [c]
-                # log(p1 * p2) = log_p1 + log_p2
-                new_accu_log_prob = accumulated_log_prob + log_prob
-                new_beams.append((new_prefix, new_accu_log_prob))
-
-        # sorted by accumulated_log_prob
-        new_beams.sort(key=lambda x: x[1], reverse=True)
-        beams = new_beams[:beam_size]
-
-    # sum up beams to produce labels
-    total_accu_log_prob = {}
-    for prefix, accu_log_prob in beams:
-        labels = tuple(_reconstruct(prefix, blank))
-        # log(p1 + p2) = logsumexp([log_p1, log_p2])
-        total_accu_log_prob[labels] = \
-            logsumexp([accu_log_prob, total_accu_log_prob.get(labels, NINF)])
-
-    labels_beams = [(list(labels), accu_log_prob)
-                    for labels, accu_log_prob in total_accu_log_prob.items()]
-    labels_beams.sort(key=lambda x: x[1], reverse=True)
-    labels = labels_beams[0][0]
-
-    return labels
+    return beam_search_nbest(emission_log_prob, blank, beam_size, emission_threshold, n_best=1)[0][0]
 
 
 def prefix_beam_decode(emission_log_prob, blank=0, **kwargs):
@@ -124,7 +130,11 @@ def prefix_beam_decode(emission_log_prob, blank=0, **kwargs):
     return labels
 
 
-def ctc_decode(log_probs, label2char=None, blank=0, method='beam_search', beam_size=10):
+def ctc_decode(log_probs, label2char=None, blank=0, method='beam_search', beam_size=10, n_best=None):
+    """Decode a (length, batch, class) log-probability tensor.
+
+    Returns one label list per image, or with n_best (beam_search only) a list of (labels, probability) pairs per
+    image, most probable first."""
     emission_log_probs = np.transpose(log_probs.cpu().numpy(), (1, 0, 2))
     # size of emission_log_probs: (batch, length, class)
 
@@ -134,11 +144,13 @@ def ctc_decode(log_probs, label2char=None, blank=0, method='beam_search', beam_s
         'prefix_beam_search': prefix_beam_decode,
     }
     decoder = decoders[method]
+    to_chars = (lambda labels: [label2char[l] for l in labels]) if label2char else (lambda labels: labels)
 
     decoded_list = []
     for emission_log_prob in emission_log_probs:
-        decoded = decoder(emission_log_prob, blank=blank, beam_size=beam_size)
-        if label2char:
-            decoded = [label2char[l] for l in decoded]
-        decoded_list.append(decoded)
+        if n_best:
+            hypotheses = beam_search_nbest(emission_log_prob, blank=blank, beam_size=beam_size, n_best=n_best)
+            decoded_list.append([(to_chars(labels), probability) for labels, probability in hypotheses])
+        else:
+            decoded_list.append(to_chars(decoder(emission_log_prob, blank=blank, beam_size=beam_size)))
     return decoded_list

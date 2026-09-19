@@ -25,9 +25,23 @@ def collection_of(path):
     return re.sub(r'(-aug|-\d+)', '', os.path.basename(os.path.dirname(path)))
 
 
+CONFIDENCE_BUCKETS = [0.0, 0.5, 0.7, 0.9, 0.99, 1.01]
+
+
+def confidence_bucket(confidence):
+    """Name of the calibration bucket a top-1 probability falls into, e.g. '0.90-0.99'."""
+    for low, high in zip(CONFIDENCE_BUCKETS, CONFIDENCE_BUCKETS[1:]):
+        if confidence < high:
+            return f'{low:.2f}-{min(high, 1.0):.2f}'
+    return f'{CONFIDENCE_BUCKETS[-2]:.2f}-1.00'
+
+
 def evaluate(crnn, dataloader, criterion,
-             max_iter=None, decode_method='beam_search', beam_size=10):
-    """Evaluate a model and return loss, CER and sequence accuracy (exact match), overall and per collection."""
+             max_iter=None, decode_method='beam_search', beam_size=10, n_best=None):
+    """Evaluate a model and return loss, CER and sequence accuracy (exact match), overall and per collection.
+
+    With n_best, the beam search also returns the n most probable sequences: the result then contains the oracle
+    accuracy (label anywhere in the n-best) and the top-1 accuracy per confidence bucket."""
     crnn.eval()
 
     tot_count = 0
@@ -35,7 +49,9 @@ def evaluate(crnn, dataloader, criterion,
 
     cer = CharErrorRate()
     exact_matches = 0
-    per_collection = defaultdict(lambda: {'count': 0, 'exact_matches': 0, 'cer': CharErrorRate()})
+    per_collection = defaultdict(lambda: {'count': 0, 'exact_matches': 0, 'oracle_matches': 0, 'cer': CharErrorRate()})
+    oracle_matches = 0
+    buckets = defaultdict(lambda: {'count': 0, 'exact_matches': 0})
     paths = getattr(dataloader.dataset, 'paths', None)
     sample_index = 0
 
@@ -59,7 +75,7 @@ def evaluate(crnn, dataloader, criterion,
 
             loss = criterion(log_probs, targets, input_lengths, target_lengths)
 
-            preds = ctc_decode(log_probs, method=decode_method, beam_size=beam_size)
+            preds = ctc_decode(log_probs, method=decode_method, beam_size=beam_size, n_best=n_best)
             reals = targets.cpu().numpy().tolist()
             target_lengths = target_lengths.cpu().numpy().tolist()
 
@@ -70,8 +86,17 @@ def evaluate(crnn, dataloader, criterion,
                 real = reals[target_length_counter:target_length_counter + target_length]
                 target_length_counter += target_length
 
-                pred_str = labels_to_string(pred)
                 real_str = labels_to_string(real)
+                if n_best:
+                    hypotheses = [labels_to_string(labels) for labels, _ in pred]
+                    pred_str, confidence = hypotheses[0], pred[0][1]
+                    oracle_match = real_str in hypotheses
+                    oracle_matches += oracle_match
+                    bucket = buckets[confidence_bucket(confidence)]
+                    bucket['count'] += 1
+                    bucket['exact_matches'] += pred_str == real_str
+                else:
+                    pred_str, oracle_match = labels_to_string(pred), False
 
                 cer.update(pred_str, real_str)
                 exact_matches += pred_str == real_str
@@ -80,13 +105,14 @@ def evaluate(crnn, dataloader, criterion,
                     stats = per_collection[collection_of(paths[sample_index])]
                     stats['count'] += 1
                     stats['exact_matches'] += pred_str == real_str
+                    stats['oracle_matches'] += oracle_match
                     stats['cer'].update(pred_str, real_str)
                 sample_index += 1
 
             pbar.update(1)
         pbar.close()
 
-    return {
+    evaluation = {
         'loss': tot_loss / tot_count,
         'cer': cer.compute().item(),
         'seq_acc': exact_matches / tot_count,
@@ -95,17 +121,34 @@ def evaluate(crnn, dataloader, criterion,
                 'count': stats['count'],
                 'cer': stats['cer'].compute().item(),
                 'seq_acc': stats['exact_matches'] / stats['count'],
+                'oracle_acc': stats['oracle_matches'] / stats['count'],
             }
             for name, stats in sorted(per_collection.items())
         },
     }
+    if n_best:
+        evaluation['n_best'] = n_best
+        evaluation['oracle_acc'] = oracle_matches / tot_count
+        evaluation['confidence_buckets'] = {
+            name: {'count': bucket['count'], 'seq_acc': bucket['exact_matches'] / bucket['count']}
+            for name, bucket in sorted(buckets.items())
+        }
+    return evaluation
 
 
 def format_evaluation(evaluation):
     """Format an evaluation result as a one-line summary followed by one line per collection."""
+    n_best = evaluation.get('n_best')
     lines = ['loss={loss:.5f}, cer={cer:.5f}, seq_acc={seq_acc:.5f}'.format(**evaluation)]
+    if n_best:
+        lines[0] += f', oracle_acc@{n_best}={evaluation["oracle_acc"]:.5f}'
     for name, stats in evaluation['collections'].items():
-        lines.append(f'  {name}: n={stats["count"]}, cer={stats["cer"]:.5f}, seq_acc={stats["seq_acc"]:.5f}')
+        lines.append(f'  {name}: n={stats["count"]}, cer={stats["cer"]:.5f}, seq_acc={stats["seq_acc"]:.5f}'
+                     + (f', oracle_acc@{n_best}={stats["oracle_acc"]:.5f}' if n_best else ''))
+    if n_best:
+        lines.append('  top-1 accuracy by confidence: ' + ', '.join(
+            f'[{name}] n={bucket["count"]} acc={bucket["seq_acc"]:.4f}'
+            for name, bucket in evaluation['confidence_buckets'].items()))
     return '\n'.join(lines)
 
 
@@ -143,7 +186,8 @@ def main():
 
     evaluation = evaluate(crnn, test_loader, criterion,
                           decode_method=config['decode_method'],
-                          beam_size=config['beam_size'])
+                          beam_size=config['beam_size'],
+                          n_best=config['n_best'])
     print('test_evaluation: ' + format_evaluation(evaluation))
 
 
