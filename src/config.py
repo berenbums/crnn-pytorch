@@ -9,7 +9,7 @@ common_config = {
 }
 
 train_config = {
-    'epochs': 15,
+    'epochs': 24,
     'train_batch_size': 128,
     'eval_batch_size': 512,
     # AdamW with a linear warmup over 'warmup_iterations' followed by cosine decay to 'lr_min' over all epochs.
